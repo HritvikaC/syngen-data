@@ -122,14 +122,13 @@ export default function ExploreScreen() {
                   </Text>
                   <Text style={styles.formatChip}>.mdf</Text>
                 </View>
+                <Pressable
+                  style={styles.generateAgainButton}
+                  onPress={() => setStep(1)}
+                >
+                  <Text style={styles.generateAgainText}>↻ Generate again</Text>
+                </Pressable>
               </View>
-
-              <Pressable
-                style={styles.generateAgainButton}
-                onPress={() => setStep(1)}
-              >
-                <Text style={styles.generateAgainText}>↻ Generate again</Text>
-              </Pressable>
 
               <View style={styles.feedbackForm}>
                 <Text style={styles.feedbackTitle}>Feedback</Text>
