@@ -31,9 +31,11 @@ export default function ExploreScreen() {
         if (Platform.OS === "web" && asset.file) {
           formData.append("file", asset.file);
         } else {
-          const response = await fetch(asset.uri);
-          const blob = await response.blob();
-          formData.append("file", blob, asset.name);
+          formData.append("file", {
+            uri: asset.uri,
+            name: asset.name,
+            type: asset.mimeType || "application/octet-stream",
+          } as any);
         }
 
         const res = await fetch(`${API_BASE_URL}/upload-schema`, {

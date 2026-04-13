@@ -96,7 +96,7 @@ async def upload_schema(
 
     # 1. Handle File Upload scenario
     if file is not None:
-        if not file.filename.endswith('.sql'):
+        if not file.filename or not file.filename.endswith('.sql'):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 
                 detail="Invalid file type. Only .sql files are allowed."
