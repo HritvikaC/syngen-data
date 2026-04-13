@@ -23,37 +23,56 @@ export default function ExploreScreen() {
   const handleFileUpload = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({ type: "*/*" });
-      if (!result.canceled) {
-        setIsLoading(true);
-        const asset = result.assets[0];
-        const formData = new FormData();
+      if (result.canceled) return;
 
-        if (Platform.OS === "web" && asset.file) {
-          formData.append("file", asset.file);
-        } else {
-          formData.append("file", {
-            uri: asset.uri,
-            name: asset.name,
-            type: asset.mimeType || "application/octet-stream",
-          } as any);
-        }
+      setIsLoading(true);
+      const asset = result.assets[0];
+      const formData = new FormData();
 
-        const res = await fetch(`${API_BASE_URL}/upload-schema`, {
-          method: "POST",
-          body: formData,
-        });
+      if (Platform.OS === "web" && asset.file) {
+        formData.append("file", asset.file);
+      } else {
+        // iOS sometimes struggles with 'file://' prefixes, Android needs them.
+        // We also default to 'text/plain' to ensure FastAPI accepts the file type.
+        const fileUri =
+          Platform.OS === "ios" ? asset.uri.replace("file://", "") : asset.uri;
 
-        const data = await res.json();
-        if (res.ok) {
-          setSessionId(data.session_id);
-          setStep(2);
-        } else {
-          alert("Upload failed: " + JSON.stringify(data));
-        }
+        formData.append("file", {
+          uri: fileUri,
+          name: asset.name || "schema.sql",
+          type: asset.mimeType || "text/plain",
+        } as any);
       }
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Error uploading file.");
+
+      console.log(`Attempting upload to: ${API_BASE_URL}/upload-schema`);
+
+      const res = await fetch(`${API_BASE_URL}/upload-schema`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          // CRITICAL: Do NOT set "Content-Type" here. React Native will automatically
+          // set it to "multipart/form-data; boundary=..."
+          Accept: "application/json",
+        },
+      });
+
+      // CRITICAL FIX: If FastAPI throws an error, it might return HTML/Text instead of JSON.
+      // Calling await res.json() on HTML will crash the app and jump to the catch block!
+      const textResponse = await res.text();
+      console.log("Raw Server Response:", textResponse);
+
+      if (res.ok) {
+        const data = JSON.parse(textResponse);
+        setSessionId(data.session_id);
+        setStep(2);
+      } else {
+        // This will now show you the EXACT error FastAPI is sending back
+        alert(`Backend Error (${res.status}): ${textResponse}`);
+      }
+    } catch (error: any) {
+      console.error("Detailed Upload Error:", error);
+      // This will now show you the EXACT network error React Native is facing
+      alert(`Network Error: ${error.message || "Could not connect to server"}`);
     } finally {
       setIsLoading(false);
     }
