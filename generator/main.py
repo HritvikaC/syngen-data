@@ -15,7 +15,7 @@ GET  /healthz              Health check.
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse, Response
 
@@ -41,7 +41,7 @@ from utils import (
 # ---------------------------------------------------------------------------
 schema_store: dict[str, ParsedSchema] = {}
 data_store: dict[str, dict] = {}
-
+MAX_FILE_SIZE = 5 * 1024 * 1024
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -92,45 +92,59 @@ async def upload_schema(
     sql_text: str | None = Form(default=None, description="Raw SQL CREATE TABLE statements"),
     file: UploadFile | None = File(default=None, description="A .sql file"),
 ):
-    """
-    Accept a SQL schema via form field (sql_text) **or** file upload.
-    Returns a session_id to use in subsequent requests.
+    raw_sql = ""
 
-    **Example curl (text):**
-    ```
-    curl -X POST http://localhost:8000/upload-schema \\
-         -F 'sql_text=CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(100));'
-    ```
-
-    **Example curl (file):**
-    ```
-    curl -X POST http://localhost:8000/upload-schema \\
-         -F 'file=@schema.sql'
-    ```
-    """
-    # Resolve SQL source
+    # 1. Handle File Upload scenario
     if file is not None:
-        raw_sql = (await file.read()).decode("utf-8")
+        if not file.filename.endswith('.sql'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Invalid file type. Only .sql files are allowed."
+            )
+        
+        file_bytes = bytearray()
+        chunk_size = 1024 * 1024  # 1 MB chunks
+        
+        while chunk := await file.read(chunk_size):
+            file_bytes.extend(chunk)
+            
+            if len(file_bytes) > MAX_FILE_SIZE:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail="File is too large. Maximum allowed size is 5 MB."
+                )
+                
+        try:
+            raw_sql = file_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="File encoding error. Please ensure the file is UTF-8 encoded text."
+            )
+
+    # 2. Handle Text Input scenario
     elif sql_text:
         raw_sql = sql_text
+
+    # 3. Handle Empty scenario
     else:
         raise HTTPException(
             status_code=422,
             detail="Provide either 'sql_text' (form field) or a file upload.",
         )
 
-    # Parse
+    # 4. Parse the resolved SQL
     try:
         schema = parse_schema(raw_sql)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    # Store
+    # 5. Store in dictionary
     session_id = str(uuid.uuid4())
     schema_store[session_id] = schema
 
     return UploadSchemaResponse(
-        message="Schema parsed successfully.",
+        message="Schema parsed securely and successfully.",
         tables=[t.name for t in schema.tables],
         session_id=session_id,
     )

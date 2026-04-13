@@ -5,69 +5,80 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Image,
+  Dimensions,
 } from "react-native";
 import { router } from "expo-router";
 
+const { width } = Dimensions.get("window");
+
 export default function HomeScreen() {
   return (
-    <ScrollView style={styles.container}>
-      {/* Top Page Navigation Links */}
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Navigation - Minimalist Floating Style */}
       <View style={styles.navBar}>
-        <Text style={styles.navLinkActive}>Home</Text>
-        <Text style={styles.navLink}>About us</Text>
-        <Pressable onPress={() => router.push("/explore")}>
-          <Text style={styles.navLink}>Generate</Text>
-        </Pressable>
-        <Pressable onPress={() => router.push("/modal")}>
-          <Text style={styles.navLink}>Pricing</Text>
-        </Pressable>
+        <Text style={styles.logo}>SYNGEN</Text>
+        <View style={styles.navLinks}>
+          <Text style={styles.navLinkActive}>Home</Text>
+
+          <Pressable onPress={() => router.push("/explore")}>
+            <Text style={styles.navLink}>Generate</Text>
+          </Pressable>
+
+          <Pressable onPress={() => router.push("/modal")}>
+            <Text style={styles.navLink}>Pricing</Text>
+          </Pressable>
+        </View>
       </View>
 
-      {/* Hero Section */}
+      {/* Hero Section - The "Workspace" Look */}
       <View style={styles.hero}>
-        <Text style={styles.title}>Heading</Text>
+        <View style={styles.pillTag}>
+          <Text style={styles.pillText}>Privacy-First Data Generation</Text>
+        </View>
+        <Text style={styles.title}>Synthetic data,{"\n"}real-world logic.</Text>
         <Text style={styles.subtitle}>
-          Generate logically consistent, realistic synthetic datasets without
-          accessing real user data. Protect privacy while accelerating testing.
+          Build, test, and scale without touching sensitive user info. The
+          modern standard for privacy-compliant development.
         </Text>
+
         <View style={styles.buttonContainer}>
           <Pressable
             style={styles.primaryButton}
             onPress={() => router.push("/explore")}
           >
-            <Text style={styles.buttonText}>Get Started →</Text>
+            <Text style={styles.buttonText}>Start Generating</Text>
           </Pressable>
-          <Pressable
-            style={styles.secondaryButton}
-            onPress={() => router.push("/modal")}
-          >
-            <Text style={styles.secondaryButtonText}>Learn More</Text>
+          <Pressable style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>Documentation</Text>
           </Pressable>
         </View>
-        <View style={styles.heroImagePlaceholder}>
-          <Text style={styles.placeholderText}>
-            [ Architecture Map Preview ]
+
+        {/* Feature Preview - Clean Glassmorphism effect */}
+        <View style={styles.previewCard}>
+          <View style={styles.codeHeader}>
+            <View style={[styles.dot, { backgroundColor: "#FF5F56" }]} />
+            <View style={[styles.dot, { backgroundColor: "#FFBD2E" }]} />
+            <View style={[styles.dot, { backgroundColor: "#27C93F" }]} />
+          </View>
+          <Text style={styles.codeText}>
+            // Generating 10k realistic users...
+          </Text>
+          <Text style={styles.codeTextPrimary}>
+            status: "Success", accuracy: 99.8%
           </Text>
         </View>
       </View>
 
-      {/* Features Section */}
+      {/* Features - Grid Layout */}
       <View style={styles.featuresSection}>
-        <Text style={styles.featuresTitle}>Feature Heading</Text>
-        <Text style={styles.featuresSubtitle}>
-          Automated schema parsing, relationship mapping, and LLM-driven
-          constraints.
-        </Text>
-
         <View style={styles.featureGrid}>
-          {[1, 2, 3].map((num) => (
-            <View key={num} style={styles.featureCard}>
-              <View style={styles.featureImagePlaceholder} />
-              <Text style={styles.featureCardTitle}>Feature {num}</Text>
+          {["LLM Driven", "Schema Parsing", "Zero-Risk"].map((feature, i) => (
+            <View key={i} style={styles.featureCard}>
+              <View style={styles.iconCircle} />
+              <Text style={styles.featureCardTitle}>{feature}</Text>
               <Text style={styles.featureCardText}>
-                Lorem ipsum dolor sit amet nulla adipiscing elit. Nunc maximus,
-                nec ut commodo.
+                Automated relationship mapping and logical consistency across
+                all datasets.
               </Text>
             </View>
           ))}
@@ -78,100 +89,104 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: "#FFF" },
   navBar: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 40,
-    padding: 20,
-    backgroundColor: "#f8f9fa",
-    borderBottomWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  navLink: { color: "#4a5568", fontSize: 16 },
-  navLinkActive: { color: "#3182ce", fontSize: 16, fontWeight: "bold" },
-  hero: { padding: 60, alignItems: "center", backgroundColor: "#e2e8f0" },
-  title: {
-    fontSize: 36,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "#2d3748",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#4a5568",
-    marginBottom: 30,
-    textAlign: "center",
-    maxWidth: 600,
-    lineHeight: 24,
-  },
-  buttonContainer: { flexDirection: "row", gap: 15, marginBottom: 40 },
-  primaryButton: {
-    backgroundColor: "#3182ce",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 4,
-  },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  secondaryButton: {
-    backgroundColor: "#fff",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "#cbd5e0",
-  },
-  secondaryButtonText: { color: "#4a5568", fontWeight: "bold", fontSize: 16 },
-  heroImagePlaceholder: {
-    width: "80%",
-    height: 350,
-    backgroundColor: "#fff",
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    paddingHorizontal: 30,
+    paddingVertical: 25,
   },
-  placeholderText: { color: "#a0aec0", fontWeight: "bold" },
-  featuresSection: { padding: 60, alignItems: "center" },
-  featuresTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#2d3748",
-  },
-  featuresSubtitle: {
-    fontSize: 16,
-    color: "#718096",
-    marginBottom: 40,
-    textAlign: "center",
-  },
-  featureGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 30,
-    justifyContent: "center",
-  },
-  featureCard: {
-    width: 300,
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#edf2f7",
-  },
-  featureImagePlaceholder: {
-    height: 150,
-    backgroundColor: "#edf2f7",
-    borderRadius: 4,
+  logo: { fontWeight: "900", letterSpacing: 2, fontSize: 18, color: "#111" },
+  navLinks: { flexDirection: "row", gap: 25 },
+  navLink: { color: "#666", fontSize: 14, fontWeight: "500" },
+  navLinkActive: { color: "#111", fontSize: 14, fontWeight: "700" },
+
+  hero: { paddingHorizontal: 25, paddingTop: 40, alignItems: "center" },
+  pillTag: {
+    backgroundColor: "#F0F4FF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
     marginBottom: 20,
   },
-  featureCardTitle: {
-    fontWeight: "bold",
-    fontSize: 18,
-    marginBottom: 10,
-    color: "#2d3748",
+  pillText: { color: "#3182ce", fontSize: 12, fontWeight: "600" },
+  title: {
+    fontSize: 42,
+    fontWeight: "800",
+    textAlign: "center",
+    color: "#111",
+    lineHeight: 48,
+    letterSpacing: -1,
   },
-  featureCardText: { color: "#718096", lineHeight: 22, fontSize: 14 },
+  subtitle: {
+    fontSize: 17,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 20,
+    lineHeight: 26,
+    maxWidth: 340,
+  },
+
+  buttonContainer: { flexDirection: "row", gap: 12, marginTop: 35 },
+  primaryButton: {
+    backgroundColor: "#111", // Sleeker than blue
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+  },
+  buttonText: { color: "#fff", fontWeight: "600", fontSize: 15 },
+  secondaryButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#EEE",
+  },
+  secondaryButtonText: { color: "#111", fontWeight: "600" },
+
+  previewCard: {
+    width: "100%",
+    backgroundColor: "#1A1A1A",
+    borderRadius: 16,
+    marginTop: 50,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  codeHeader: { flexDirection: "row", gap: 6, marginBottom: 15 },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  codeText: { color: "#666", fontFamily: "monospace", fontSize: 13 },
+  codeTextPrimary: {
+    color: "#27C93F",
+    fontFamily: "monospace",
+    fontSize: 13,
+    marginTop: 5,
+  },
+
+  featuresSection: { padding: 30, marginTop: 40 },
+  featureGrid: { gap: 20 },
+  featureCard: {
+    backgroundColor: "#F9FAFB",
+    padding: 25,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#E0E7FF",
+    marginBottom: 15,
+  },
+  featureCardTitle: {
+    fontWeight: "700",
+    fontSize: 18,
+    color: "#111",
+    marginBottom: 8,
+  },
+  featureCardText: { color: "#666", fontSize: 14, lineHeight: 20 },
 });
