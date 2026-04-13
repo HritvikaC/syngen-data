@@ -6,11 +6,121 @@ import {
   Pressable,
   TextInput,
   ScrollView,
+  ActivityIndicator,
+  Platform,
 } from "react-native";
 import { router } from "expo-router";
+import * as DocumentPicker from "expo-document-picker";
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export default function ExploreScreen() {
   const [step, setStep] = useState(1);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState(".csv");
+
+  // --- API CALLS ---
+
+  // STEP 1: Upload Schema
+  const handleFileUpload = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: "*/*" });
+      if (!result.canceled) {
+        setIsLoading(true);
+        const asset = result.assets[0];
+
+        const formData = new FormData();
+
+        // Handle web vs mobile file uploads
+        if (Platform.OS === "web" && asset.file) {
+          formData.append("file", asset.file);
+        } else {
+          const response = await fetch(asset.uri);
+          const blob = await response.blob();
+          formData.append("file", blob, asset.name);
+        }
+
+        const res = await fetch(`${API_BASE_URL}/upload-schema`, {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setSessionId(data.session_id);
+          setStep(2);
+        } else {
+          alert("Upload failed: " + JSON.stringify(data));
+        }
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Error uploading file.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // STEP 2: Generate Data
+  const handleGenerate = async () => {
+    if (!sessionId) return;
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/generate-data`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: sessionId,
+          rows_per_table: 100, // Default rows, can be made dynamic later
+        }),
+      });
+
+      if (res.ok) {
+        setStep(3);
+      } else {
+        const errorData = await res.json();
+        alert("Generation failed: " + JSON.stringify(errorData));
+      }
+    } catch (error) {
+      console.error("Generate error:", error);
+      alert("Error generating data.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // STEP 3: Download
+  const handleDownload = () => {
+    if (!sessionId) return;
+
+    let endpoint = "";
+    if (selectedFormat === ".csv") endpoint = "/download/csv";
+    if (selectedFormat === ".sql") endpoint = "/download/sql";
+    if (selectedFormat === ".json") {
+      alert("JSON download endpoint pending in backend!");
+      return;
+    }
+
+    const downloadUrl = `${API_BASE_URL}${endpoint}?session_id=${sessionId}`;
+
+    // Trigger download in browser
+    if (Platform.OS === "web") {
+      window.open(downloadUrl, "_blank");
+    } else {
+      // Mobile fallback logic would go here
+    }
+  };
+
+  // Reset function
+  const handleReset = () => {
+    setSessionId(null);
+    setStep(1);
+  };
+
+  // --- UI RENDER ---
 
   return (
     <ScrollView style={styles.container}>
@@ -55,27 +165,30 @@ export default function ExploreScreen() {
         <View style={styles.card}>
           {step === 1 && (
             <View style={styles.uploadSection}>
-              <View style={styles.dropZone}>
-                <Text style={styles.uploadIcon}>↑</Text>
+              <Pressable style={styles.dropZone} onPress={handleFileUpload}>
+                <Text style={styles.uploadIcon}>↑_</Text>
                 <Text style={styles.dropZoneText}>
-                  Upload or select from device files
+                  {isLoading ? "Uploading..." : "Click to upload .sql schema"}
                 </Text>
-              </View>
+              </Pressable>
               <View style={styles.actionArea}>
                 <Text style={styles.actionTitle}>Upload your file here</Text>
                 <Text style={styles.subText}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc
-                  maximus, nulla ut commodo sagittis.
+                  Syngen will parse your DDL and detect relationships
+                  automatically.
                 </Text>
                 <View style={{ flexDirection: "row", gap: 15, marginTop: 20 }}>
                   <Pressable
-                    style={styles.primaryButton}
-                    onPress={() => setStep(2)}
+                    style={[
+                      styles.primaryButton,
+                      isLoading && { opacity: 0.7 },
+                    ]}
+                    onPress={handleFileUpload}
+                    disabled={isLoading}
                   >
-                    <Text style={styles.buttonText}>Generate my dataset →</Text>
-                  </Pressable>
-                  <Pressable style={styles.secondaryButton}>
-                    <Text style={styles.secondaryButtonText}>Learn more</Text>
+                    <Text style={styles.buttonText}>
+                      {isLoading ? "Processing..." : "Upload Schema →"}
+                    </Text>
                   </Pressable>
                 </View>
               </View>
@@ -84,15 +197,25 @@ export default function ExploreScreen() {
 
           {step === 2 && (
             <View style={styles.loadingSection}>
-              <Text style={styles.actionTitle}>
-                Processing DDL & Generating Data...
+              <Text style={styles.actionTitle}>Ready to Generate Data</Text>
+              <Text style={styles.subText}>
+                Schema parsed successfully. Session ID: {sessionId}
               </Text>
-              <Pressable
-                style={[styles.primaryButton, { marginTop: 30 }]}
-                onPress={() => setStep(3)}
-              >
-                <Text style={styles.buttonText}>Simulate Completion</Text>
-              </Pressable>
+
+              {isLoading ? (
+                <ActivityIndicator
+                  size="large"
+                  color="#3182ce"
+                  style={{ marginTop: 30 }}
+                />
+              ) : (
+                <Pressable
+                  style={[styles.primaryButton, { marginTop: 30 }]}
+                  onPress={handleGenerate}
+                >
+                  <Text style={styles.buttonText}>Start Generation Engine</Text>
+                </Pressable>
+              )}
             </View>
           )}
 
@@ -103,28 +226,38 @@ export default function ExploreScreen() {
                   Thank you for using Syngen
                 </Text>
                 <Text style={styles.subText}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc
-                  maximus, nulla ut commodo.
+                  Your mathematically sound synthetic data is ready.
                 </Text>
+
                 <Pressable
                   style={[
                     styles.primaryButton,
                     { width: "100%", alignItems: "center", marginTop: 20 },
                   ]}
+                  onPress={handleDownload}
                 >
                   <Text style={styles.buttonText}>↓ Download</Text>
                 </Pressable>
+
                 <View style={styles.formatSelector}>
                   <Text style={styles.formatLabel}>Choose format:</Text>
-                  <Text style={styles.formatChip}>.csv</Text>
-                  <Text style={[styles.formatChip, styles.activeFormat]}>
-                    .db
-                  </Text>
-                  <Text style={styles.formatChip}>.mdf</Text>
+                  {[".csv", ".sql", ".json"].map((fmt) => (
+                    <Pressable key={fmt} onPress={() => setSelectedFormat(fmt)}>
+                      <Text
+                        style={[
+                          styles.formatChip,
+                          selectedFormat === fmt && styles.activeFormat,
+                        ]}
+                      >
+                        {fmt}
+                      </Text>
+                    </Pressable>
+                  ))}
                 </View>
+
                 <Pressable
                   style={styles.generateAgainButton}
-                  onPress={() => setStep(1)}
+                  onPress={handleReset}
                 >
                   <Text style={styles.generateAgainText}>↻ Generate again</Text>
                 </Pressable>
@@ -138,7 +271,7 @@ export default function ExploreScreen() {
                     <TextInput style={styles.input} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.inputLabel}>Phone</Text>
+                    <Text style={styles.inputLabel}>Email</Text>
                     <TextInput style={styles.input} />
                   </View>
                 </View>
@@ -148,10 +281,7 @@ export default function ExploreScreen() {
                   numberOfLines={4}
                   style={[styles.input, { height: 100 }]}
                 />
-                <Pressable
-                  style={styles.primaryButton}
-                  onPress={() => setStep(1)}
-                >
+                <Pressable style={styles.primaryButton} onPress={handleReset}>
                   <Text style={styles.buttonText}>Submit</Text>
                 </Pressable>
               </View>
@@ -234,6 +364,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#fff",
+    cursor: "pointer",
   },
   uploadIcon: { fontSize: 60, color: "#4a5568", marginBottom: 10 },
   dropZoneText: { fontSize: 18, color: "#2d3748" },
@@ -278,21 +409,6 @@ const styles = StyleSheet.create({
     color: "#4a5568",
   },
   activeFormat: { backgroundColor: "#3182ce", color: "#fff" },
-  generateAgainButton: {
-    marginTop: 30,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: "#edf2f7",
-    borderRadius: 4,
-    alignSelf: "flex-start",
-    borderWidth: 1,
-    borderColor: "#cbd5e0",
-  },
-  generateAgainText: {
-    color: "#4a5568",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
   feedbackForm: {
     flex: 1,
     minWidth: 350,
@@ -321,4 +437,15 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     outlineStyle: "solid",
   },
+  generateAgainButton: {
+    marginTop: 30,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: "#edf2f7",
+    borderRadius: 4,
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#cbd5e0",
+  },
+  generateAgainText: { color: "#4a5568", fontWeight: "bold", fontSize: 14 },
 });

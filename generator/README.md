@@ -109,7 +109,7 @@ curl -X POST http://localhost:8000/generate-data \
   "message": "Data generated successfully.",
   "session_id": "...",
   "tables_generated": ["users", "orders"],
-  "row_counts": {"users": 1000, "orders": 5000}
+  "row_counts": { "users": 1000, "orders": 5000 }
 }
 ```
 
@@ -160,16 +160,16 @@ curl http://localhost:8000/schema/<session_id>
 
 ## Supported SQL Data Types
 
-| SQL Type                              | Generated As                          |
-|---------------------------------------|---------------------------------------|
-| INT, INTEGER, BIGINT, SMALLINT        | Integer (realistic range)             |
-| FLOAT, DOUBLE, DECIMAL, NUMERIC       | Float (realistic range)               |
-| VARCHAR(n), CHAR(n)                   | String (respects max length)          |
-| TEXT, LONGTEXT                        | Faker paragraph                       |
-| BOOLEAN / BOOL                        | True / False                          |
-| DATE                                  | Random date (last 5 years)            |
-| DATETIME, TIMESTAMP                   | Random datetime (2010–now)            |
-| UUID                                  | UUID v4 string                        |
+| SQL Type                        | Generated As                 |
+| ------------------------------- | ---------------------------- |
+| INT, INTEGER, BIGINT, SMALLINT  | Integer (realistic range)    |
+| FLOAT, DOUBLE, DECIMAL, NUMERIC | Float (realistic range)      |
+| VARCHAR(n), CHAR(n)             | String (respects max length) |
+| TEXT, LONGTEXT                  | Faker paragraph              |
+| BOOLEAN / BOOL                  | True / False                 |
+| DATE                            | Random date (last 5 years)   |
+| DATETIME, TIMESTAMP             | Random datetime (2010–now)   |
+| UUID                            | UUID v4 string               |
 
 ---
 
@@ -178,12 +178,12 @@ curl http://localhost:8000/schema/<session_id>
 Columns are matched by name keyword for semantic realism:
 
 | Keyword in column name | Generated value                           |
-|------------------------|-------------------------------------------|
+| ---------------------- | ----------------------------------------- |
 | `email`                | realistic email address                   |
 | `name`, `first_name`   | realistic person name                     |
-| `age`                  | normal distribution μ=35, σ=12 (18–90)   |
+| `age`                  | normal distribution μ=35, σ=12 (18–90)    |
 | `amount`, `price`      | log-normal distribution (realistic spend) |
-| `salary`               | normal distribution μ=55k (20k–300k)     |
+| `salary`               | normal distribution μ=55k (20k–300k)      |
 | `phone`                | phone number                              |
 | `address`, `city`      | Faker location                            |
 | `status`               | active / inactive / pending / suspended   |
